@@ -610,7 +610,7 @@ namespace McMaster.Extensions.CommandLineUtils
 
             if (result != ValidationResult.Success)
             {
-                return ValidationErrorHandler?.Invoke(result) ?? 1;
+                return ValidationErrorHandler(result);
             }
 
             return command.Invoke();
@@ -984,6 +984,16 @@ namespace McMaster.Extensions.CommandLineUtils
             if (State != null && serviceType == State.GetType())
             {
                 return State;
+            }
+
+            if (serviceType == typeof(IEnumerable<CommandOption>))
+            {
+                return GetOptions();
+            }
+
+            if (serviceType == typeof(IEnumerable<CommandArgument>))
+            {
+                return Arguments;
             }
 
             return null;

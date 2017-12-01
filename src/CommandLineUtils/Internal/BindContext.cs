@@ -10,7 +10,6 @@ namespace McMaster.Extensions.CommandLineUtils
         public CommandLineApplication App { get; set; }
         public object Target { get; set; }
         public BindContext Child { get; set; }
-
         public ValidationResult ValidationResult { get; set; }
 
         public BindContext GetBottomContext()

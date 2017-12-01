@@ -15,7 +15,7 @@ namespace McMaster.Extensions.CommandLineUtils
         /// </summary>
         /// <param name="option">The option.</param>
         /// <param name="allowEmptyStrings">Indicates whether an empty string is allowed.</param>
-        /// <param name="errorMessage">The error message to display. See also <seealso cref="ValidationAttribute.ErrorMessage"/>.</param>
+        /// <param name="errorMessage">The custom error message to display. See also <seealso cref="ValidationAttribute.ErrorMessage"/>.</param>
         /// <returns>The option.</returns>
         public static CommandOption IsRequired(this CommandOption option, bool allowEmptyStrings = false, string errorMessage = null)
         {
@@ -30,7 +30,7 @@ namespace McMaster.Extensions.CommandLineUtils
         /// </summary>
         /// <param name="argument">The argument.</param>
         /// <param name="allowEmptyStrings">Indicates whether an empty string is allowed.</param>
-        /// <param name="errorMessage">The error message to display. See also <seealso cref="ValidationAttribute.ErrorMessage"/>.</param>
+        /// <param name="errorMessage">The custom error message to display. See also <seealso cref="ValidationAttribute.ErrorMessage"/>.</param>
         /// <returns>The argument.</returns>
         public static CommandArgument IsRequired(this CommandArgument argument, bool allowEmptyStrings = false, string errorMessage = null)
         {
