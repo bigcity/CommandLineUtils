@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -16,11 +17,12 @@ namespace McMaster.Extensions.CommandLineUtils
     /// Describes a set of command line arguments, options, and execution behavior.
     /// <see cref="CommandLineApplication"/> can be nested to support subcommands.
     /// </summary>
-    public partial class CommandLineApplication
+    public partial class CommandLineApplication : IServiceProvider
     {
         // used to keep track of arguments added from the response file
         private int _responseFileArgsEnd = -1;
         private IConsole _console;
+        private Func<ValidationResult, int> _validationErrorHandler;
 
         /// <summary>
         /// Initializes a new instance of <see cref="CommandLineApplication"/>.
@@ -64,6 +66,7 @@ namespace McMaster.Extensions.CommandLineUtils
             Commands = new List<CommandLineApplication>();
             RemainingArguments = new List<string>();
             Invoke = () => 0;
+            ValidationErrorHandler = DefaultValidationErrorHandler;
             SetConsole(console);
         }
 
@@ -217,6 +220,16 @@ namespace McMaster.Extensions.CommandLineUtils
         /// The writer used to display generated error messages.
         /// </summary>
         public TextWriter Error { get; set; }
+
+        /// <summary>
+        /// The action to call when the command executes, but there was an error validation options or arguments.
+        /// The action can return a new validation result.
+        /// </summary>
+        public Func<ValidationResult, int> ValidationErrorHandler
+        {
+            get => _validationErrorHandler;
+            set => _validationErrorHandler = value ?? throw new ArgumentNullException(nameof(value));
+        }
 
         /// <summary>
         /// Gets all command line options available to this command, including any inherited options.
@@ -593,7 +606,79 @@ namespace McMaster.Extensions.CommandLineUtils
                 throw new CommandParsingException(command, $"Missing value for option '{option.LongName}'");
             }
 
+            var result = command.GetValidationResult();
+
+            if (result != ValidationResult.Success)
+            {
+                return ValidationErrorHandler?.Invoke(result) ?? 1;
+            }
+
             return command.Invoke();
+        }
+
+        /// <summary>
+        /// Validates arguments and options.
+        /// </summary>
+        /// <returns>The first validation result that is not <see cref="ValidationResult.Success"/> if there is an error.</returns>
+        public ValidationResult GetValidationResult()
+        {
+            foreach (var argument in Arguments)
+            {
+                var context = new ValidationContext(argument, this, null);
+
+                if (!string.IsNullOrEmpty(argument.Name))
+                {
+                    context.DisplayName = argument.Name;
+                    context.MemberName = argument.Name;
+                }
+
+                foreach (var validator in argument.Validators)
+                {
+                    var result = validator.GetValidationResult(argument, context);
+                    if (result != ValidationResult.Success)
+                    {
+                        return result;
+                    }
+                }
+            }
+
+            foreach (var option in GetOptions())
+            {
+                var context = new ValidationContext(option, this, null);
+
+                string name = null;
+                if (option.LongName != null)
+                {
+                    name = "--" + option.LongName;
+                }
+
+                if (name == null && option.ShortName != null)
+                {
+                    name = "-" + option.ShortName;
+                }
+
+                if (name == null && option.SymbolName != null)
+                {
+                    name = "-" + option.SymbolName;
+                }
+
+                if (!string.IsNullOrEmpty(name))
+                {
+                    context.DisplayName = name;
+                    context.MemberName = name;
+                }
+
+                foreach (var validator in option.Validators)
+                {
+                    var result = validator.GetValidationResult(option, context);
+                    if (result != ValidationResult.Success)
+                    {
+                        return result;
+                    }
+                }
+            }
+
+            return ValidationResult.Success;
         }
 
         /// <summary>
@@ -856,6 +941,15 @@ namespace McMaster.Extensions.CommandLineUtils
             _settingConsole = false;
         }
 
+        private int DefaultValidationErrorHandler(ValidationResult result)
+        {
+            _console.ForegroundColor = ConsoleColor.Red;
+            _console.Error.WriteLine(result.ErrorMessage);
+            _console.ResetColor();
+            ShowHint();
+            return 1;
+        }
+
         private void HandleUnexpectedArg(CommandLineApplication command, IReadOnlyList<string> args, int index, string argTypeName)
         {
             if (command.ThrowOnUnexpectedArgument)
@@ -868,6 +962,31 @@ namespace McMaster.Extensions.CommandLineUtils
                 // All remaining arguments are stored for further use
                 command.RemainingArguments.AddRange(new ArraySegment<string>(args.ToArray(), index, args.Count - index));
             }
+        }
+
+        /// <summary>
+        /// Returns a service provider for some commonly used types associated with a CommandLineApplication.
+        /// </summary>
+        /// <param name="serviceType">The service type</param>
+        /// <returns>An instance of <paramref name="serviceType"/>, or <c>null</c> if it is not available.</returns>
+        object IServiceProvider.GetService(Type serviceType)
+        {
+            if (serviceType == typeof(CommandLineApplication))
+            {
+                return this;
+            }
+
+            if (serviceType == typeof(IConsole))
+            {
+                return _console;
+            }
+
+            if (State != null && serviceType == State.GetType())
+            {
+                return State;
+            }
+
+            return null;
         }
 
         private class CommandArgumentEnumerator : IEnumerator<CommandArgument>
