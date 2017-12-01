@@ -130,5 +130,43 @@ namespace McMaster.Extensions.CommandLineUtils.Tests
             var validation = app.GetValidationResult();
             Assert.Equal(expected, validation.ErrorMessage);
         }
+
+        private class EmailArgumentApp
+        {
+            [Argument(0), EmailAddress]
+            public string Email { get; }
+            private void OnExecute() { }
+        }
+
+        [Theory]
+        [InlineData(null, 0)]
+        [InlineData("", 1)]
+        [InlineData(" ", 1)]
+        [InlineData("email", 1)]
+        [InlineData("email@email@email", 1)]
+        [InlineData("email@example.com", 0)]
+        public void ValidatesEmailArgument(string email, int exitCode)
+        {
+            Assert.Equal(exitCode, CommandLineApplication.Execute<EmailArgumentApp>(email));
+        }
+
+        private class EmailOptionApp
+        {
+            [Option, EmailAddress]
+            public string Email { get; }
+            private void OnExecute() { }
+        }
+
+        [Theory]
+        [InlineData(new string[0], 0)]
+        [InlineData(new[] { "-e", "" }, 1)]
+        [InlineData(new[] { "-e", " " }, 1)]
+        [InlineData(new[] { "-e", "email" }, 1)]
+        [InlineData(new[] { "-e", "email@email@email" }, 1)]
+        [InlineData(new[] { "-e", "email@example.com" }, 0)]
+        public void ValidatesEmailOption(string[] args, int exitCode)
+        {
+            Assert.Equal(exitCode, CommandLineApplication.Execute<EmailOptionApp>(args));
+        }
     }
 }

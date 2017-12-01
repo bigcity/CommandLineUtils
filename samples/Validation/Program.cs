@@ -16,12 +16,10 @@ class Program
             .IsRequired();
 
         var optionReceiver = app.Option("--to <EMAIL>", "Required. The recipient.", CommandOptionType.SingleValue)
-            .IsRequired()
-            .IsEmailAddress();
+            .IsRequired();
 
         var optionSender = app.Option("--from <EMAIL>", "Required. The sender.", CommandOptionType.SingleValue)
-            .IsRequired()
-            .IsEmailAddress();
+            .IsRequired();
 
         var optionColor = app.Option("--color <COLOR>", "The color. Should be 'red' or 'blue'.", CommandOptionType.SingleValue);
         optionColor.Validators.Add(new MustBeBlueOrRedValidator());

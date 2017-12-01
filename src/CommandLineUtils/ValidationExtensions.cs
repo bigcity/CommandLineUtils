@@ -8,7 +8,7 @@ namespace McMaster.Extensions.CommandLineUtils
     /// <summary>
     /// Extension methods for adding validation rules to options and arguments.
     /// </summary>
-    public static partial class ValidationExtensions
+    public static class ValidationExtensions
     {
         /// <summary>
         /// Indicates the option is required.
@@ -19,16 +19,8 @@ namespace McMaster.Extensions.CommandLineUtils
         /// <returns>The option.</returns>
         public static CommandOption IsRequired(this CommandOption option, bool allowEmptyStrings = false, string errorMessage = null)
         {
-            var attribute = new RequiredAttribute
-            {
-                AllowEmptyStrings = allowEmptyStrings,
-            };
-
-            if (errorMessage != null)
-            {
-                attribute.ErrorMessage = errorMessage;
-            }
-
+            var attribute = GetValidationAttr<RequiredAttribute>(errorMessage);
+            attribute.AllowEmptyStrings = allowEmptyStrings;
             option.Validators.Add(new AttributeValidator(attribute));
             return option;
         }
@@ -42,18 +34,21 @@ namespace McMaster.Extensions.CommandLineUtils
         /// <returns>The argument.</returns>
         public static CommandArgument IsRequired(this CommandArgument argument, bool allowEmptyStrings = false, string errorMessage = null)
         {
-            var attribute = new RequiredAttribute
-            {
-                AllowEmptyStrings = allowEmptyStrings,
-            };
+            var attribute = GetValidationAttr<RequiredAttribute>(errorMessage);
+            attribute.AllowEmptyStrings = allowEmptyStrings;
+            argument.Validators.Add(new AttributeValidator(attribute));
+            return argument;
+        }
 
+        private static T GetValidationAttr<T>(string errorMessage)
+            where T : ValidationAttribute, new()
+        {
+            var attribute = new T();
             if (errorMessage != null)
             {
                 attribute.ErrorMessage = errorMessage;
             }
-
-            argument.Validators.Add(new AttributeValidator(attribute));
-            return argument;
+            return attribute;
         }
     }
 }

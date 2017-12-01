@@ -617,71 +617,6 @@ namespace McMaster.Extensions.CommandLineUtils
         }
 
         /// <summary>
-        /// Validates arguments and options.
-        /// </summary>
-        /// <returns>The first validation result that is not <see cref="ValidationResult.Success"/> if there is an error.</returns>
-        public ValidationResult GetValidationResult()
-        {
-            foreach (var argument in Arguments)
-            {
-                var context = new ValidationContext(argument, this, null);
-
-                if (!string.IsNullOrEmpty(argument.Name))
-                {
-                    context.DisplayName = argument.Name;
-                    context.MemberName = argument.Name;
-                }
-
-                foreach (var validator in argument.Validators)
-                {
-                    var result = validator.GetValidationResult(argument, context);
-                    if (result != ValidationResult.Success)
-                    {
-                        return result;
-                    }
-                }
-            }
-
-            foreach (var option in GetOptions())
-            {
-                var context = new ValidationContext(option, this, null);
-
-                string name = null;
-                if (option.LongName != null)
-                {
-                    name = "--" + option.LongName;
-                }
-
-                if (name == null && option.ShortName != null)
-                {
-                    name = "-" + option.ShortName;
-                }
-
-                if (name == null && option.SymbolName != null)
-                {
-                    name = "-" + option.SymbolName;
-                }
-
-                if (!string.IsNullOrEmpty(name))
-                {
-                    context.DisplayName = name;
-                    context.MemberName = name;
-                }
-
-                foreach (var validator in option.Validators)
-                {
-                    var result = validator.GetValidationResult(option, context);
-                    if (result != ValidationResult.Success)
-                    {
-                        return result;
-                    }
-                }
-            }
-
-            return ValidationResult.Success;
-        }
-
-        /// <summary>
         /// Helper method that adds a help option.
         /// </summary>
         /// <param name="template"></param>
@@ -939,6 +874,71 @@ namespace McMaster.Extensions.CommandLineUtils
             }
 
             _settingConsole = false;
+        }
+
+        /// <summary>
+        /// Validates arguments and options.
+        /// </summary>
+        /// <returns>The first validation result that is not <see cref="ValidationResult.Success"/> if there is an error.</returns>
+        internal ValidationResult GetValidationResult()
+        {
+            foreach (var argument in Arguments)
+            {
+                var context = new ValidationContext(argument, this, null);
+
+                if (!string.IsNullOrEmpty(argument.Name))
+                {
+                    context.DisplayName = argument.Name;
+                    context.MemberName = argument.Name;
+                }
+
+                foreach (var validator in argument.Validators)
+                {
+                    var result = validator.GetValidationResult(argument, context);
+                    if (result != ValidationResult.Success)
+                    {
+                        return result;
+                    }
+                }
+            }
+
+            foreach (var option in GetOptions())
+            {
+                var context = new ValidationContext(option, this, null);
+
+                string name = null;
+                if (option.LongName != null)
+                {
+                    name = "--" + option.LongName;
+                }
+
+                if (name == null && option.ShortName != null)
+                {
+                    name = "-" + option.ShortName;
+                }
+
+                if (name == null && option.SymbolName != null)
+                {
+                    name = "-" + option.SymbolName;
+                }
+
+                if (!string.IsNullOrEmpty(name))
+                {
+                    context.DisplayName = name;
+                    context.MemberName = name;
+                }
+
+                foreach (var validator in option.Validators)
+                {
+                    var result = validator.GetValidationResult(option, context);
+                    if (result != ValidationResult.Success)
+                    {
+                        return result;
+                    }
+                }
+            }
+
+            return ValidationResult.Success;
         }
 
         private int DefaultValidationErrorHandler(ValidationResult result)
